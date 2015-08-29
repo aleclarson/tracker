@@ -1,0 +1,8 @@
+{
+  "name": "tracker",
+  "description": "Dependency tracker to allow reactive callbacks",
+  "version": "1.0.8",
+  "dependencies": {
+    "meteor-client": "aleclarson/meteor-client#1.1.7"
+  }
+}
