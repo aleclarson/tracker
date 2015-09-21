@@ -1,12 +1,14 @@
-/////////////////////////////////////////////////////
-// Package docs at http://docs.meteor.com/#tracker //
-/////////////////////////////////////////////////////
+
+var Meteor = require('meteor-client');
+
+// Provided by React Native
+var setImmediate = global.setImmediate || require('setImmediate');
 
 /**
  * @namespace Tracker
  * @summary The namespace for Tracker-related methods.
  */
-Tracker = {};
+var Tracker = {};
 
 // http://docs.meteor.com/#tracker_active
 
@@ -38,18 +40,6 @@ var setCurrentComputation = function (c) {
   Tracker.active = !! c;
 };
 
-var _debugFunc = function () {
-  // We want this code to work without Meteor, and also without
-  // "console" (which is technically non-standard and may be missing
-  // on some browser we come across, like it was on IE 7).
-  //
-  // Lazy evaluation because `Meteor` does not exist right away.(??)
-  return (typeof Meteor !== "undefined" ? Meteor._debug :
-          ((typeof console !== "undefined") && console.error ?
-           function () { console.error.apply(console, arguments); } :
-           function () {}));
-};
-
 var _maybeSupressMoreLogs = function (messagesLength) {
   // Sometimes when running tests, we intentionally supress logs on expected
   // printed errors. Since the current implementation of _throwOrLog can log
@@ -63,43 +53,26 @@ var _maybeSupressMoreLogs = function (messagesLength) {
 };
 
 var _throwOrLog = function (from, e) {
-  if (throwFirstError) {
-    throw e;
-  } else {
-    var printArgs = ["Exception from Tracker " + from + " function:"];
-    if (e.stack && e.message && e.name) {
-      var idx = e.stack.indexOf(e.message);
-      if (idx < 0 || idx > e.name.length + 2) { // check for "Error: "
-        // message is not part of the stack
-        var message = e.name + ": " + e.message;
-        printArgs.push(message);
-      }
-    }
-    printArgs.push(e.stack);
-    _maybeSupressMoreLogs(printArgs.length);
-
-    for (var i = 0; i < printArgs.length; i++) {
-      _debugFunc()(printArgs[i]);
-    }
-  }
-};
-
-// Takes a function `f`, and wraps it in a `Meteor._noYieldsAllowed`
-// block if we are running on the server. On the client, returns the
-// original function (since `Meteor._noYieldsAllowed` is a
-// no-op). This has the benefit of not adding an unnecessary stack
-// frame on the client.
-var withNoYieldsAllowed = function (f) {
-  if ((typeof Meteor === 'undefined') || Meteor.isClient) {
-    return f;
-  } else {
-    return function () {
-      var args = arguments;
-      Meteor._noYieldsAllowed(function () {
-        f.apply(null, args);
-      });
-    };
-  }
+  Meteor._debug(e);
+  // if (throwFirstError) {
+  //   throw e;
+  // } else {
+  //   var printArgs = ["Exception from Tracker " + from + " function:"];
+  //   if (e.stack && e.message && e.name) {
+  //     var idx = e.stack.indexOf(e.message);
+  //     if (idx < 0 || idx > e.name.length + 2) { // check for "Error: "
+  //       // message is not part of the stack
+  //       var message = e.name + ": " + e.message;
+  //       printArgs.push(message);
+  //     }
+  //   }
+  //   printArgs.push(e.stack);
+  //   _maybeSupressMoreLogs(printArgs.length);
+  //
+  //   for (var i = 0; i < printArgs.length; i++) {
+  //     Meteor._debug(printArgs[i]);
+  //   }
+  // }
 };
 
 var nextId = 1;
@@ -126,10 +99,7 @@ var afterFlushCallbacks = [];
 var requireFlush = function () {
   if (! willFlush) {
     // We want this code to work without Meteor, see debugFunc above
-    if (typeof Meteor !== "undefined")
-      Meteor._setImmediate(Tracker._runFlush);
-    else
-      setTimeout(Tracker._runFlush, 0);
+    setImmediate(Tracker._runFlush);
     willFlush = true;
   }
 };
@@ -232,7 +202,7 @@ Tracker.Computation.prototype.onInvalidate = function (f) {
 
   if (self.invalidated) {
     Tracker.nonreactive(function () {
-      withNoYieldsAllowed(f)(self);
+      f(self);
     });
   } else {
     self._onInvalidateCallbacks.push(f);
@@ -252,7 +222,7 @@ Tracker.Computation.prototype.onStop = function (f) {
 
   if (self.stopped) {
     Tracker.nonreactive(function () {
-      withNoYieldsAllowed(f)(self);
+      f(self);
     });
   } else {
     self._onStopCallbacks.push(f);
@@ -281,7 +251,7 @@ Tracker.Computation.prototype.invalidate = function () {
     // self.invalidated === true.
     for(var i = 0, f; f = self._onInvalidateCallbacks[i]; i++) {
       Tracker.nonreactive(function () {
-        withNoYieldsAllowed(f)(self);
+        f(self);
       });
     }
     self._onInvalidateCallbacks = [];
@@ -304,7 +274,7 @@ Tracker.Computation.prototype.stop = function () {
     delete Tracker._computations[self._id];
     for(var i = 0, f; f = self._onStopCallbacks[i]; i++) {
       Tracker.nonreactive(function () {
-        withNoYieldsAllowed(f)(self);
+        f(self);
       });
     }
     self._onStopCallbacks = [];
@@ -320,7 +290,7 @@ Tracker.Computation.prototype._compute = function () {
   var previousInCompute = inCompute;
   inCompute = true;
   try {
-    withNoYieldsAllowed(self._func)(self);
+    self._func(self);
   } finally {
     setCurrentComputation(previous);
     inCompute = previousInCompute;
@@ -617,3 +587,5 @@ Tracker.afterFlush = function (f) {
   afterFlushCallbacks.push(f);
   requireFlush();
 };
+
+module.exports = Tracker;
