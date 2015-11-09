@@ -3,6 +3,7 @@
   "description": "Dependency tracker to allow reactive callbacks",
   "version": "1.0.8",
   "dependencies": {
-    "meteor-client": "aleclarson/meteor-client#1.1.7"
+    "is-node-env": "aleclarson/is-node-env#1.0.0",
+    "meteor-client": "aleclarson/meteor-client#6b9009f6219f893d1ca2b5ed8915b0e29ef7fd00"
   }
 }
