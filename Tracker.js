@@ -59,7 +59,6 @@ var afterFlushCallbacks = [];
 
 Tracker._requireFlush = function () {
   if (! Tracker._willFlush) {
-    // We want this code to work without Meteor, see debugFunc above
     setImmediate(Tracker._runFlush);
     Tracker._willFlush = true;
   }

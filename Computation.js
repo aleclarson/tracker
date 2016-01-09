@@ -72,6 +72,7 @@ Tracker.Computation = function (f, parent, onError) {
   self._parent = parent;
   self._func = f;
   self._onError = onError;
+  self._sync = false;
   self._recomputing = false;
 
   // Register the computation within the global Tracker.
@@ -138,14 +139,19 @@ Tracker.Computation.prototype.onStop = function (f) {
 Tracker.Computation.prototype.invalidate = function () {
   var self = this;
   if (! self.invalidated) {
+    self.invalidated = true;
+
+    if (isDev) {
+      self.stack = parseErrorStack(Error());
+    }
+
     // if we're currently in _recompute(), don't enqueue
     // ourselves, since we'll rerun immediately anyway.
-    if (! self._recomputing && ! self.stopped) {
+    var willRecompute = ! self._recomputing && ! self.stopped;
+    if (! self._sync && willRecompute) {
       Tracker._requireFlush();
       Tracker._pendingComputations.push(this);
     }
-
-    self.invalidated = true;
 
     // callbacks can't add callbacks, because
     // self.invalidated === true.
@@ -156,8 +162,9 @@ Tracker.Computation.prototype.invalidate = function () {
     }
     self._onInvalidateCallbacks = [];
 
-    if (isDev) {
-      self.stack = parseErrorStack(Error());
+    // Synchronous computations recompute immediately.
+    if (self._sync && willRecompute) {
+      self._recompute();
     }
   }
 };
