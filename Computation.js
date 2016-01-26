@@ -4,7 +4,7 @@ var Meteor = require('meteor-client');
 var isNodeEnv = require('is-node-env');
 var isDev = !isNodeEnv && __DEV__;
 
-if (isDev) {
+if (!isNodeEnv) { // isDev) {
   var parseErrorStack = require('parseErrorStack');
   var ExceptionsManager = require('ExceptionsManager');
 }
@@ -138,34 +138,35 @@ Tracker.Computation.prototype.onStop = function (f) {
  */
 Tracker.Computation.prototype.invalidate = function () {
   var self = this;
-  if (! self.invalidated) {
-    self.invalidated = true;
+  if (self.invalidated) {
+    return;
+  }
+  self.invalidated = true;
 
-    if (isDev) {
-      self.stack = parseErrorStack(Error());
-    }
+  // if (isDev) {
+  self.stack = parseErrorStack(Error());
+  // }
 
-    // if we're currently in _recompute(), don't enqueue
-    // ourselves, since we'll rerun immediately anyway.
-    var willRecompute = ! self._recomputing && ! self.stopped;
-    if (! self._sync && willRecompute) {
-      Tracker._requireFlush();
-      Tracker._pendingComputations.push(this);
-    }
+  // if we're currently in _recompute(), don't enqueue
+  // ourselves, since we'll rerun immediately anyway.
+  var willRecompute = ! self._recomputing && ! self.stopped;
+  if (! self._sync && willRecompute) {
+    Tracker._requireFlush();
+    Tracker._pendingComputations.push(this);
+  }
 
-    // callbacks can't add callbacks, because
-    // self.invalidated === true.
-    for(var i = 0, f; f = self._onInvalidateCallbacks[i]; i++) {
-      Tracker.nonreactive(function () {
-        f(self);
-      });
-    }
-    self._onInvalidateCallbacks = [];
+  // callbacks can't add callbacks, because
+  // self.invalidated === true.
+  for(var i = 0, f; f = self._onInvalidateCallbacks[i]; i++) {
+    Tracker.nonreactive(function () {
+      f(self);
+    });
+  }
+  self._onInvalidateCallbacks = [];
 
-    // Synchronous computations recompute immediately.
-    if (self._sync && willRecompute) {
-      self._recompute();
-    }
+  // Synchronous computations recompute immediately.
+  if (self._sync && willRecompute) {
+    self._recompute();
   }
 };
 
