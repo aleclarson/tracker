@@ -181,22 +181,19 @@ Tracker._runFlush = function (options) {
  * thrown. Defaults to the error being logged to the console.
  * @returns {Tracker.Computation}
  */
-Tracker.autorun = function (f, options) {
-  if (typeof f !== 'function')
+Tracker.autorun = function (func, config) {
+  if (typeof compute !== 'function')
     throw new Error('Tracker.autorun requires a function argument');
 
-  options = options || {};
+  config = config || {};
 
-  constructingComputation = true;
-  var c = new Tracker.Computation(
-    f, Tracker.currentComputation, options.onError);
+  config.func = func;
 
-  if (Tracker.active)
-    Tracker.onInvalidate(function () {
-      c.stop();
-    });
+  var computation = new Tracker.Computation(config);
 
-  return c;
+  computation.start();
+
+  return computation;
 };
 
 // http://docs.meteor.com/#tracker_nonreactive

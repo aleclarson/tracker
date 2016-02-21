@@ -2,9 +2,9 @@
 var Meteor = require('meteor-client');
 
 var isNodeEnv = require('is-node-env');
-var isDev = !isNodeEnv && __DEV__;
+var isDev = !isNodeEnv; // && __DEV__;
 
-if (!isNodeEnv) { // isDev) {
+if (isDev) {
   var parseErrorStack = require('parseErrorStack');
   var ExceptionsManager = require('ExceptionsManager');
 }
@@ -13,7 +13,6 @@ var Tracker = require('./Tracker');
 
 var nextId = 1;
 
-//
 // http://docs.meteor.com/#tracker_computation
 
 /**
@@ -25,7 +24,7 @@ var nextId = 1;
  * computation.
  * @instancename computation
  */
-Tracker.Computation = function (f, parent, onError) {
+Tracker.Computation = function (config) {
 
   var self = this;
 
@@ -38,7 +37,7 @@ Tracker.Computation = function (f, parent, onError) {
    * @instance
    * @name  stopped
    */
-  self.stopped = false;
+  self.stopped = true;
 
   // http://docs.meteor.com/#computation_invalidated
 
@@ -65,27 +64,134 @@ Tracker.Computation = function (f, parent, onError) {
   self.firstRun = true;
 
   self._id = nextId++;
+  self._recomputing = false;
+
+  self.keyPath = config.keyPath;
+  self._func = config.func;
+  self._onError = config.onError;
+  self._sync = config.sync === true;
+  self._DEBUG = config.DEBUG;
+
   self._onInvalidateCallbacks = [];
   self._onStopCallbacks = [];
+
   // the plan is at some point to use the parent relation
   // to constrain the order that computations are processed
-  self._parent = parent;
-  self._func = f;
-  self._onError = onError;
-  self._sync = false;
-  self._recomputing = false;
+  self._parent = config.parent || Tracker.currentComputation;
 
   // Register the computation within the global Tracker.
   Tracker._computations[self._id] = self;
+};
+
+Tracker.Computation.prototype.start = function () {
+  var self = this;
+
+  if (! self.stopped) {
+    return;
+  }
+  self.stopped = false;
 
   try {
     self._compute();
   } catch (e) {
+    if (isDev) {
+      self.getStack = function () {
+        return parseErrorStack(e);
+      };
+    }
     self._reportException(e);
     self.stop();
   }
 
   self.firstRun = false;
+
+  if (Tracker.active) {
+    Tracker.onInvalidate(function () {
+      self.stop();
+    });
+  }
+};
+
+// http://docs.meteor.com/#computation_invalidate
+
+/**
+ * @summary Invalidates this computation so that it will be rerun.
+ * @locus Client
+ */
+Tracker.Computation.prototype.invalidate = function () {
+  var self = this;
+  if (self.invalidated) {
+    return;
+  }
+  self.invalidated = true;
+  if (self._DEBUG) {
+    console.log('Invalidated: ' + self.getDisplayName());
+  }
+
+  if (isDev) {
+    var e = Error();
+    self.getStack = function () {
+      return parseErrorStack(e);
+    };
+  }
+
+  if (self._sync) {
+    if (! self.stopped) {
+      self._onInvalidate();
+      self._recompute();
+    }
+    return;
+  }
+
+  // if we're currently in _recompute(), don't enqueue
+  // ourselves, since we'll rerun immediately anyway.
+  if (! self._recomputing && ! self.stopped) {
+    Tracker._requireFlush();
+    Tracker._pendingComputations.push(this);
+  }
+
+  self._onInvalidate();
+};
+
+Tracker.Computation.prototype._onInvalidate = function () {
+  var self = this;
+
+  // callbacks can't add callbacks, because
+  // self.invalidated === true.
+  for(var i = 0, f; f = self._onInvalidateCallbacks[i]; i++) {
+    Tracker.nonreactive(function () {
+      f(self);
+    });
+  }
+
+  self._onInvalidateCallbacks = [];
+};
+
+// http://docs.meteor.com/#computation_stop
+
+/**
+ * @summary Prevents this computation from rerunning.
+ * @locus Client
+ */
+Tracker.Computation.prototype.stop = function () {
+  var self = this;
+
+  if (self.stopped) {
+    return;
+  }
+
+  self.stopped = true;
+  self.invalidate();
+
+  // Unregister from global Tracker.
+  delete Tracker._computations[self._id];
+
+  for(var i = 0, f; f = self._onStopCallbacks[i]; i++) {
+    Tracker.nonreactive(function () {
+      f(self);
+    });
+  }
+  self._onStopCallbacks = [];
 };
 
 // http://docs.meteor.com/#computation_oninvalidate
@@ -130,67 +236,15 @@ Tracker.Computation.prototype.onStop = function (f) {
   }
 };
 
-// http://docs.meteor.com/#computation_invalidate
-
-/**
- * @summary Invalidates this computation so that it will be rerun.
- * @locus Client
- */
-Tracker.Computation.prototype.invalidate = function () {
-  var self = this;
-  if (self.invalidated) {
-    return;
-  }
-  self.invalidated = true;
-
-  // if (isDev) {
-  self.stack = parseErrorStack(Error());
-  // }
-
-  // if we're currently in _recompute(), don't enqueue
-  // ourselves, since we'll rerun immediately anyway.
-  var willRecompute = ! self._recomputing && ! self.stopped;
-  if (! self._sync && willRecompute) {
-    Tracker._requireFlush();
-    Tracker._pendingComputations.push(this);
-  }
-
-  // callbacks can't add callbacks, because
-  // self.invalidated === true.
-  for(var i = 0, f; f = self._onInvalidateCallbacks[i]; i++) {
-    Tracker.nonreactive(function () {
-      f(self);
-    });
-  }
-  self._onInvalidateCallbacks = [];
-
-  // Synchronous computations recompute immediately.
-  if (self._sync && willRecompute) {
-    self._recompute();
-  }
-};
-
-// http://docs.meteor.com/#computation_stop
-
-/**
- * @summary Prevents this computation from rerunning.
- * @locus Client
- */
-Tracker.Computation.prototype.stop = function () {
+Tracker.Computation.prototype.getDisplayName = function () {
   var self = this;
 
-  if (! self.stopped) {
-    self.stopped = true;
-    self.invalidate();
-    // Unregister from global Tracker.
-    delete Tracker._computations[self._id];
-    for(var i = 0, f; f = self._onStopCallbacks[i]; i++) {
-      Tracker.nonreactive(function () {
-        f(self);
-      });
-    }
-    self._onStopCallbacks = [];
+  var displayName = '' + self._id;
+  if (self.keyPath) {
+    displayName += '.' + self.keyPath;
   }
+
+  return displayName;
 };
 
 Tracker.Computation.prototype._compute = function () {
@@ -202,6 +256,9 @@ Tracker.Computation.prototype._compute = function () {
   var previousInCompute = Tracker._inCompute;
   Tracker._inCompute = true;
   try {
+    if (self._DEBUG) {
+      console.log('Computing:   ' + self.getDisplayName());
+    }
     self._func(self);
   } finally {
     Tracker._setCurrentComputation(previous);
@@ -232,9 +289,14 @@ Tracker.Computation.prototype._recompute = function () {
 };
 
 Tracker.Computation.prototype._reportException = function (e) {
+  var self = this;
+
+  self._error = e;
+
   if (isDev) {
     e.computation = this;
   }
+
   if (this._onError) {
     this._onError(e);
   } else {
