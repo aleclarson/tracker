@@ -3,7 +3,9 @@
   "description": "Dependency tracker to allow reactive callbacks",
   "version": "1.0.8",
   "dependencies": {
+    "failure": "aleclarson/failure#1.0.0",
     "is-node-env": "aleclarson/is-node-env#1.0.0",
-    "meteor-client": "aleclarson/meteor-client#6b9009f6219f893d1ca2b5ed8915b0e29ef7fd00"
+    "isReactNative": "aleclarson/isReactNative#1.0.0",
+    "lotus-require": "aleclarson/lotus-require#1.0.0"
   }
 }

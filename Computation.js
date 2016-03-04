@@ -1,13 +1,8 @@
 
-var Meteor = require('meteor-client');
+var throwFailure = require('failure').throwFailure;
 
-var isNodeEnv = require('is-node-env');
-var isDev = !isNodeEnv; // && __DEV__;
-
-if (isDev) {
-  var parseErrorStack = require('parseErrorStack');
-  var ExceptionsManager = require('ExceptionsManager');
-}
+var isReactNative = require('isReactNative');
+var isDev = isReactNative; // TODO && __DEV__;
 
 var Tracker = require('./Tracker');
 
@@ -94,12 +89,7 @@ Tracker.Computation.prototype.start = function () {
   try {
     self._compute();
   } catch (e) {
-    if (isDev) {
-      self.getStack = function () {
-        return parseErrorStack(e);
-      };
-    }
-    self._reportException(e);
+    self._throwFailure(e);
     self.stop();
   }
 
@@ -128,19 +118,19 @@ Tracker.Computation.prototype.invalidate = function () {
     console.log('Invalidated: ' + self.getDisplayName());
   }
 
-  if (isDev) {
-    var e = Error();
-    self.getStack = function () {
-      return parseErrorStack(e);
-    };
-  }
-
   if (self._sync) {
     if (! self.stopped) {
       self._onInvalidate();
       self._recompute();
     }
     return;
+  }
+
+  if (isDev) {
+    self._invalidatedError = [
+      '::  When the Computation was invalidated  ::',
+      Error()
+    ];
   }
 
   // if we're currently in _recompute(), don't enqueue
@@ -280,7 +270,7 @@ Tracker.Computation.prototype._recompute = function () {
       try {
         self._compute();
       } catch (e) {
-        self._reportException(e);
+        self._throwFailure(e);
       }
     }
   } finally {
@@ -288,18 +278,15 @@ Tracker.Computation.prototype._recompute = function () {
   }
 };
 
-Tracker.Computation.prototype._reportException = function (e) {
-  var self = this;
-
-  self._error = e;
-
+Tracker.Computation.prototype._throwFailure = function (error) {
+  var errorData = {};
   if (isDev) {
-    e.computation = this;
+    errorData.stack = this._invalidatedError;
   }
 
   if (this._onError) {
-    this._onError(e);
+    this._onError(error, errorData);
   } else {
-    Meteor._debug(e);
+    throwFailure(error, errorData);
   }
 };

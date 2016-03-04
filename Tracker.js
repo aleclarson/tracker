@@ -1,8 +1,11 @@
 
-var Meteor = require('meteor-client');
+require('lotus-require');
 
-// Provided by React Native
-var setImmediate = global.setImmediate || require('setImmediate');
+var isReactNative = require('isReactNative');
+
+var setImmediate = isReactNative ? require('setImmediate') : global.setImmediate;
+
+var throwFailure = require('failure').throwFailure;
 
 /**
  * @namespace Tracker
@@ -127,7 +130,7 @@ Tracker._runFlush = function (options) {
         try {
           func();
         } catch (e) {
-          Meteor._debug(e);
+          throwFailure(e, { afterFlush: func });
         }
       }
     }
