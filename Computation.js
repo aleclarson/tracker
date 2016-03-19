@@ -1,8 +1,6 @@
 
 var throwFailure = require('failure').throwFailure;
-
-var isReactNative = require('isReactNative');
-var isDev = isReactNative; // TODO && __DEV__;
+var isDev = require('isDev');
 
 var Tracker = require('./Tracker');
 

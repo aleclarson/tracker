@@ -1,10 +1,6 @@
 
 require('lotus-require');
 
-var isReactNative = require('isReactNative');
-
-var setImmediate = isReactNative ? require('setImmediate') : global.setImmediate;
-
 var throwFailure = require('failure').throwFailure;
 
 /**
