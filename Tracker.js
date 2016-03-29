@@ -181,7 +181,7 @@ Tracker._runFlush = function (options) {
  * @returns {Tracker.Computation}
  */
 Tracker.autorun = function (func, config) {
-  if (typeof compute !== 'function')
+  if (typeof func !== 'function')
     throw new Error('Tracker.autorun requires a function argument');
 
   config = config || {};

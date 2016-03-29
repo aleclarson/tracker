@@ -63,7 +63,6 @@ Tracker.Computation = function (config) {
   self._func = config.func;
   self._onError = config.onError;
   self._sync = config.sync === true;
-  self._DEBUG = config.DEBUG;
 
   self._onInvalidateCallbacks = [];
   self._onStopCallbacks = [];
@@ -112,9 +111,6 @@ Tracker.Computation.prototype.invalidate = function () {
     return;
   }
   self.invalidated = true;
-  if (self._DEBUG) {
-    console.log('Invalidated: ' + self.getDisplayName());
-  }
 
   if (self._sync) {
     if (! self.stopped) {
@@ -244,9 +240,6 @@ Tracker.Computation.prototype._compute = function () {
   var previousInCompute = Tracker._inCompute;
   Tracker._inCompute = true;
   try {
-    if (self._DEBUG) {
-      console.log('Computing:   ' + self.getDisplayName());
-    }
     self._func(self);
   } finally {
     Tracker._setCurrentComputation(previous);
