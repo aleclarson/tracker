@@ -1,6 +1,9 @@
 
+require('isDev');
+
 var throwFailure = require('failure').throwFailure;
-var isDev = require('isDev');
+
+var Tracer = require('tracer');
 
 var Tracker = require('./Tracker');
 
@@ -120,12 +123,7 @@ Tracker.Computation.prototype.invalidate = function () {
     return;
   }
 
-  if (isDev) {
-    self._invalidatedError = [
-      '::  When the Computation was invalidated  ::',
-      Error()
-    ];
-  }
+  self._trace = Tracer('Computation::invalidate()');
 
   // if we're currently in _recompute(), don't enqueue
   // ourselves, since we'll rerun immediately anyway.
@@ -271,8 +269,8 @@ Tracker.Computation.prototype._recompute = function () {
 
 Tracker.Computation.prototype._throwFailure = function (error) {
   var errorData = {};
-  if (isDev) {
-    errorData.stack = this._invalidatedError;
+  if (isDev && this._trace) {
+    errorData.stack = this._trace();
   }
 
   if (this._onError) {
