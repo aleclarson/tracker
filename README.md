@@ -1,16 +1,27 @@
 
-# tracker v1.0.8 [![experimental](http://badges.github.io/stability-badges/dist/experimental.svg)](http://github.com/badges/stability-badges)
+# tracker v2.0.0 ![stable](https://img.shields.io/badge/stability-stable-4EBA0F.svg?style=flat)
 
-This package is stripped from [meteor/tracker](https://atmospherejs.com/meteor/tracker) and made compatible with [React Native](https://github.com/facebook/react-native).
+This library provides:
 
-**Note:** This package is only for client-side usage.
+- A graph of reactive dependencies.
 
-&nbsp;
+- Helpers for managing reactive dependencies.
 
-## usage
+### Tracker
 
-```js
-var Tracker = require('tracker');
-```
+The `Tracker` is a singleton that manages the graph of reactive dependencies.
 
-Learn more [here](http://docs.meteor.com/#/basic/tracker).
+[Learn more about the Tracker class.]()
+
+### Tracker.Dependency
+
+A `Tracker.Dependency` represents a reactive value that can be depended on.
+
+[Learn more about the Dependency class.]()
+
+### Tracker.Computation
+
+A `Tracker.Computation` calls its assigned function whenever one of its
+reactive dependencies is changed.
+
+[Learn more about the Computation class.]()
