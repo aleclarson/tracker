@@ -11,17 +11,17 @@ This library provides:
 
 The `Tracker` is a singleton that manages the graph of reactive dependencies.
 
-[Learn more about the Tracker class.]()
+[Learn the `Tracker` API.](https://github.com/aleclarson/tracker/wiki/Tracker)
 
 ### Tracker.Dependency
 
 A `Tracker.Dependency` represents a reactive value that can be depended on.
 
-[Learn more about the Dependency class.]()
+[Learn the `Tracker.Dependency` API.](https://github.com/aleclarson/tracker/wiki/Dependency)
 
 ### Tracker.Computation
 
 A `Tracker.Computation` calls its assigned function whenever one of its
 reactive dependencies is changed.
 
-[Learn more about the Computation class.]()
+[Learn the `Tracker.Computation` API.](https://github.com/aleclarson/tracker/wiki/Computation)

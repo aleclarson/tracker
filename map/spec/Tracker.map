@@ -1,0 +1,10 @@
+{
+  "version": 3,
+  "file": "Tracker.js",
+  "sourceRoot": "../../spec",
+  "sources": [
+    "Tracker.coffee"
+  ],
+  "names": [],
+  "mappings": ""
+}

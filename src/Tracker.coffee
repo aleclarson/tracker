@@ -23,16 +23,10 @@ type.defineValues
 
   _inCompute: no
 
-type.bindMethods [
-  "_runFlush"
-  "_requireFlush"
-]
-
 type.defineMethods
 
-  flush: (options = {}) ->
-    options.finishSynchronously ?= yes
-    @_runFlush options
+  flush: (isAsync = no) ->
+    @_runFlush isAsync
     return
 
   autorun: (func, options = {}) ->
@@ -51,7 +45,7 @@ type.defineMethods
       @_setCurrentComputation previous
 
   onInvalidate: (callback) ->
-    assert @isActive, "'onInvalidate' cannot be called when 'active' is false!"
+    assert @isActive, "'onInvalidate' cannot be called when 'isActive' is false!"
     @currentComputation.onInvalidate callback
     return
 
@@ -67,10 +61,10 @@ type.defineMethods
 
   _requireFlush: ->
     return if @_willFlush
-    setImmediate @_runFlush
     @_willFlush = yes
+    setImmediate => @_runFlush yes
 
-  _runFlush: (options = {}) ->
+  _runFlush: (isAsync) ->
 
     assert not @_inFlush,
       reason: "Cannot call 'flush' during a flush!"
@@ -95,7 +89,7 @@ type.defineMethods
           if computation._needsRecompute()
             pending.unshift computation
 
-          continue if options.finishSynchronously
+          continue unless isAsync
 
           recomputedCount += 1
           continue if recomputedCount <= 1000
@@ -115,13 +109,13 @@ type.defineMethods
 
       unless finishedTry
         @_inFlush = no
-        @_runFlush options
+        @_runFlush isAsync
 
       @_willFlush = no
       @_inFlush = no
 
       if pending.length or callbacks.length
-        assert not options.finishSynchronously
+        assert isAsync, "Only async flushing should end up here!"
         setTimeout @_requireFlush, 10
 
 module.exports = type.construct()

@@ -21,8 +21,8 @@ type.defineMethods
     self = this
     unless @_dependentsById[id]
       @_dependentsById[id] = computation
-      computation.onInvalidate ->
-        delete self._dependentsById[id]
+      computation.onInvalidate =>
+        delete @_dependentsById[id]
       return yes
     return no
 

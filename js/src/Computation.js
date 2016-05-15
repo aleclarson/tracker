@@ -1,10 +1,16 @@
-var Tracer, Tracker, Type, nextId, throwFailure, type;
+var Event, Tracer, Tracker, Type, assertType, getArgProp, nextId, throwFailure, type;
 
 require("isDev");
 
 throwFailure = require("failure").throwFailure;
 
+assertType = require("assertType");
+
+getArgProp = require("getArgProp");
+
 Tracer = require("tracer");
+
+Event = require("event");
 
 Type = require("Type");
 
@@ -16,40 +22,38 @@ type = Type("Tracker_Computation");
 
 type.optionTypes = {
   func: Function,
-  onError: Function,
   async: Boolean.Maybe,
-  keyPath: String.Maybe
+  keyPath: String.Maybe,
+  onError: Function
+};
+
+type.optionDefaults = {
+  async: true,
+  onError: throwFailure
 };
 
 type.defineValues({
   id: function() {
     return nextId++;
   },
-  keyPath: function(options) {
-    return options.keyPath;
-  },
+  keyPath: getArgProp("keyPath"),
   isActive: false,
-  isInvalidated: false,
+  isAsync: getArgProp("async"),
   isFirstRun: true,
-  isAsync: function(options) {
-    return options.async !== false;
-  },
+  isInvalidated: false,
   _recomputing: false,
-  _func: function(options) {
-    return options.func;
-  },
   _parent: function(options) {
     return options.parent || Tracker.currentComputation;
   },
-  _errorCallback: function(options) {
-    return options.onError;
+  _func: getArgProp("func"),
+  _onError: getArgProp("onError"),
+  _didInvalidate: function() {
+    return Event();
   },
-  _invalidateCallbacks: function() {
-    return [];
+  _didStop: function() {
+    return Event();
   },
-  _stopCallbacks: function() {
-    return [];
-  }
+  _trace: isDev ? null : void 0
 });
 
 type.initInstance(function() {
@@ -69,7 +73,7 @@ type.defineMethods({
       this._compute();
     } catch (error1) {
       error = error1;
-      this._onError(error);
+      this._fail(error);
       this.stop();
     }
     this.isFirstRun = false;
@@ -84,7 +88,7 @@ type.defineMethods({
     this.isInvalidated = true;
     if (!this.isAsync) {
       if (this.isActive) {
-        this._onInvalidate();
+        this._invalidate();
         this._recompute();
       }
       return;
@@ -96,59 +100,51 @@ type.defineMethods({
       Tracker._requireFlush();
       Tracker._pendingComputations.push(this);
     }
-    this._onInvalidate();
+    this._invalidate();
   },
   stop: function() {
-    var self;
     if (!this.isActive) {
       return;
     }
     this.isActive = false;
     this.invalidate();
     delete Tracker._computations[this.id];
-    self = this;
-    Tracker.nonreactive(function() {
-      var callback, i, len, ref;
-      ref = this._stopCallbacks;
-      for (i = 0, len = ref.length; i < len; i++) {
-        callback = ref[i];
-        callback(self);
-      }
-    });
-    this._stopCallbacks.length = 0;
+    if (!this._didStop.listenerCount) {
+      return;
+    }
+    Tracker.nonreactive((function(_this) {
+      return function() {
+        _this._didStop.emit();
+        return _this._didStop.reset();
+      };
+    })(this));
   },
   onInvalidate: function(callback) {
     assertType(callback, Function);
-    if (!this.isInvalidated) {
-      this._invalidateCallbacks.push(callback);
-      return;
+    if (this.isInvalidated) {
+      Tracker.nonreactive(callback);
+    } else {
+      this._didInvalidate(callback);
     }
-    Tracker.nonreactive(function() {
-      return callback(self);
-    });
   },
   onStop: function(callback) {
     assertType(callback, Function);
-    if (this.isActive) {
-      this._stopCallbacks.push(callback);
+    if (!this.isActive) {
+      Tracker.nonreactive(callback);
+    } else {
+      this._didStop(callback);
+    }
+  },
+  _invalidate: function() {
+    if (!this._didInvalidate.listenerCount) {
       return;
     }
-    Tracker.nonreactive(function() {
-      return callback(self);
-    });
-  },
-  _onInvalidate: function() {
-    var self;
-    self = this;
-    Tracker.nonreactive(function() {
-      var callback, i, len, ref;
-      ref = this._invalidateCallbacks;
-      for (i = 0, len = ref.length; i < len; i++) {
-        callback = ref[i];
-        callback(self);
-      }
-    });
-    this._invalidateCallbacks.length = 0;
+    Tracker.nonreactive((function(_this) {
+      return function() {
+        _this._didInvalidate.emit();
+        return _this._didInvalidate.reset();
+      };
+    })(this));
   },
   _compute: function() {
     var previous, previousInCompute;
@@ -176,25 +172,21 @@ type.defineMethods({
           return this._compute();
         } catch (error1) {
           error = error1;
-          return this._onError(error);
+          return this._fail(error);
         }
       }
     } finally {
       this._recomputing = false;
     }
   },
-  _onError: function(error) {
-    var data;
+  _fail: function(error) {
+    var meta;
     if (isDev && this._trace) {
-      data = {
+      meta = {
         stack: this._trace()
       };
     }
-    if (this._errorCallback) {
-      return this._errorCallback(error, data);
-    } else {
-      return throwFailure(error, data);
-    }
+    return this.didFail.emit(error, meta);
   }
 });
 

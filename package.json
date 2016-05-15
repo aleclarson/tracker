@@ -3,10 +3,13 @@
   "version": "2.0.0",
   "main": "js/src/index",
   "dependencies": {
+    "Type": "aleclarson/Type#1.0.0",
+    "assertType": "aleclarson/assertType#1.0.0",
+    "event": "aleclarson/event#1.0.0",
     "failure": "aleclarson/failure#1.0.0",
+    "getArgProp": "aleclarson/getArgProp#1.0.0",
     "isDev": "aleclarson/isDev#1.0.0",
-    "tracer": "aleclarson/tracer#1.0.0",
-    "Type": "aleclarson/Type#1.0.0"
+    "tracer": "aleclarson/tracer#1.0.0"
   },
   "lotus": {
     "plugins": [

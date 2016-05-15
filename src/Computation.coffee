@@ -3,7 +3,10 @@ require "isDev"
 
 { throwFailure } = require "failure"
 
+assertType = require "assertType"
+getArgProp = require "getArgProp"
 Tracer = require "tracer"
+Event = require "event"
 Type = require "Type"
 
 Tracker = require "./Tracker"
@@ -14,35 +17,41 @@ type = Type "Tracker_Computation"
 
 type.optionTypes =
   func: Function
-  onError: Function
   async: Boolean.Maybe
   keyPath: String.Maybe
+  onError: Function
+
+type.optionDefaults =
+  async: yes
+  onError: throwFailure
 
 type.defineValues
 
   id: -> nextId++
 
-  keyPath: (options) -> options.keyPath
+  keyPath: getArgProp "keyPath"
 
   isActive: no
 
-  isInvalidated: no
+  isAsync: getArgProp "async"
 
   isFirstRun: yes
 
-  isAsync: (options) -> options.async isnt no
+  isInvalidated: no
 
   _recomputing: no
 
-  _func: (options) -> options.func
-
   _parent: (options) -> options.parent or Tracker.currentComputation
 
-  _errorCallback: (options) -> options.onError
+  _func: getArgProp "func"
 
-  _invalidateCallbacks: -> []
+  _onError: getArgProp "onError"
 
-  _stopCallbacks: -> []
+  _didInvalidate: -> Event()
+
+  _didStop: -> Event()
+
+  _trace: null if isDev
 
 type.initInstance ->
   Tracker._computations[@id] = this
@@ -60,7 +69,7 @@ type.defineMethods
 
     try @_compute()
     catch error
-      @_onError error
+      @_fail error
       @stop()
 
     @isFirstRun = no
@@ -75,7 +84,7 @@ type.defineMethods
 
     unless @isAsync
       if @isActive
-        @_onInvalidate()
+        @_invalidate()
         @_recompute()
       return
 
@@ -85,7 +94,7 @@ type.defineMethods
       Tracker._requireFlush()
       Tracker._pendingComputations.push this
 
-    @_onInvalidate()
+    @_invalidate()
     return
 
   stop: ->
@@ -94,49 +103,33 @@ type.defineMethods
     @isActive = no
 
     @invalidate()
-
     delete Tracker._computations[@id]
 
-    self = this
-    Tracker.nonreactive ->
-      callback self for callback in @_stopCallbacks
-      return
-
-    @_stopCallbacks.length = 0
+    return unless @_didStop.listenerCount
+    Tracker.nonreactive =>
+      @_didStop.emit()
+      @_didStop.reset()
     return
 
   onInvalidate: (callback) ->
-
     assertType callback, Function
-
-    unless @isInvalidated
-      @_invalidateCallbacks.push callback
-      return
-
-    Tracker.nonreactive ->
-      callback self
+    if @isInvalidated
+      Tracker.nonreactive callback
+    else @_didInvalidate callback
     return
 
   onStop: (callback) ->
-
     assertType callback, Function
-
-    if @isActive
-      @_stopCallbacks.push callback
-      return
-
-    Tracker.nonreactive ->
-      callback self
+    unless @isActive
+      Tracker.nonreactive callback
+    else @_didStop callback
     return
 
-  _onInvalidate: ->
-
-    self = this
-    Tracker.nonreactive ->
-      callback self for callback in @_invalidateCallbacks
-      return
-
-    @_invalidateCallbacks.length = 0
+  _invalidate: ->
+    return unless @_didInvalidate.listenerCount
+    Tracker.nonreactive =>
+      @_didInvalidate.emit()
+      @_didInvalidate.reset()
     return
 
   _compute: ->
@@ -164,18 +157,13 @@ type.defineMethods
       if @_needsRecompute()
         try @_compute()
         catch error
-          @_onError error
+          @_fail error
 
     finally
       @_recomputing = no
 
-  _onError: (error) ->
-
-    if isDev and @_trace
-      data = stack: @_trace()
-
-    if @_errorCallback
-      @_errorCallback error, data
-    else throwFailure error, data
+  _fail: (error) ->
+    meta = stack: @_trace() if isDev and @_trace
+    @didFail.emit error, meta
 
 module.exports = type.build()

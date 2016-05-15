@@ -23,17 +23,12 @@ type.defineValues({
   _inCompute: false
 });
 
-type.bindMethods(["_runFlush", "_requireFlush"]);
-
 type.defineMethods({
-  flush: function(options) {
-    if (options == null) {
-      options = {};
+  flush: function(isAsync) {
+    if (isAsync == null) {
+      isAsync = false;
     }
-    if (options.finishSynchronously == null) {
-      options.finishSynchronously = true;
-    }
-    this._runFlush(options);
+    this._runFlush(isAsync);
   },
   autorun: function(func, options) {
     var computation;
@@ -58,7 +53,7 @@ type.defineMethods({
     }
   },
   onInvalidate: function(callback) {
-    assert(this.isActive, "'onInvalidate' cannot be called when 'active' is false!");
+    assert(this.isActive, "'onInvalidate' cannot be called when 'isActive' is false!");
     this.currentComputation.onInvalidate(callback);
   },
   afterFlush: function(callback) {
@@ -74,14 +69,15 @@ type.defineMethods({
     if (this._willFlush) {
       return;
     }
-    setImmediate(this._runFlush);
-    return this._willFlush = true;
+    this._willFlush = true;
+    return setImmediate((function(_this) {
+      return function() {
+        return _this._runFlush(true);
+      };
+    })(this));
   },
-  _runFlush: function(options) {
+  _runFlush: function(isAsync) {
     var callback, callbacks, computation, error, finishedTry, pending, recomputedCount;
-    if (options == null) {
-      options = {};
-    }
     assert(!this._inFlush, {
       reason: "Cannot call 'flush' during a flush!"
     });
@@ -102,7 +98,7 @@ type.defineMethods({
           if (computation._needsRecompute()) {
             pending.unshift(computation);
           }
-          if (options.finishSynchronously) {
+          if (!isAsync) {
             continue;
           }
           recomputedCount += 1;
@@ -128,12 +124,12 @@ type.defineMethods({
     } finally {
       if (!finishedTry) {
         this._inFlush = false;
-        this._runFlush(options);
+        this._runFlush(isAsync);
       }
       this._willFlush = false;
       this._inFlush = false;
       if (pending.length || callbacks.length) {
-        assert(!options.finishSynchronously);
+        assert(isAsync, "Only async flushing should end up here!");
         setTimeout(this._requireFlush, 10);
       }
     }

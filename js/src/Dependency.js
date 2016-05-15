@@ -25,9 +25,11 @@ type.defineMethods({
     self = this;
     if (!this._dependentsById[id]) {
       this._dependentsById[id] = computation;
-      computation.onInvalidate(function() {
-        return delete self._dependentsById[id];
-      });
+      computation.onInvalidate((function(_this) {
+        return function() {
+          return delete _this._dependentsById[id];
+        };
+      })(this));
       return true;
     }
     return false;
