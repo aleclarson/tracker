@@ -1,6 +1,8 @@
 
 { throwFailure } = require "failure"
 
+assertType = require "assertType"
+assert = require "assert"
 Type = require "Type"
 
 type = Type "Tracker"

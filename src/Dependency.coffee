@@ -1,4 +1,5 @@
 
+hasKeys = require "hasKeys"
 Type = require "Type"
 
 Tracker = require "./Tracker"
@@ -32,6 +33,6 @@ type.defineMethods
     return
 
   hasDependents: ->
-    Object.keys(@_dependentsById).length > 0
+    hasKeys @_dependentsById
 
 module.exports = type.build()

@@ -69,7 +69,7 @@ type.defineMethods
 
     try @_compute()
     catch error
-      @_fail error
+      @_reportError error
       @stop()
 
     @isFirstRun = no
@@ -157,13 +157,13 @@ type.defineMethods
       if @_needsRecompute()
         try @_compute()
         catch error
-          @_fail error
+          @_reportError error
 
     finally
       @_recomputing = no
 
-  _fail: (error) ->
+  _reportError: (error) ->
     meta = stack: @_trace() if isDev and @_trace
-    @didFail.emit error, meta
+    @_onError error, meta
 
 module.exports = type.build()

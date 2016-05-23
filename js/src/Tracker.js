@@ -1,6 +1,10 @@
-var Type, throwFailure, type;
+var Type, assert, assertType, throwFailure, type;
 
 throwFailure = require("failure").throwFailure;
+
+assertType = require("assertType");
+
+assert = require("assert");
 
 Type = require("Type");
 

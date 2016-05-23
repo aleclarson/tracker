@@ -1,4 +1,6 @@
-var Tracker, Type, type;
+var Tracker, Type, hasKeys, type;
+
+hasKeys = require("hasKeys");
 
 Type = require("Type");
 
@@ -43,7 +45,7 @@ type.defineMethods({
     }
   },
   hasDependents: function() {
-    return Object.keys(this._dependentsById).length > 0;
+    return hasKeys(this._dependentsById);
   }
 });
 

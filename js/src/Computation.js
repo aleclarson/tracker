@@ -73,7 +73,7 @@ type.defineMethods({
       this._compute();
     } catch (error1) {
       error = error1;
-      this._fail(error);
+      this._reportError(error);
       this.stop();
     }
     this.isFirstRun = false;
@@ -172,21 +172,21 @@ type.defineMethods({
           return this._compute();
         } catch (error1) {
           error = error1;
-          return this._fail(error);
+          return this._reportError(error);
         }
       }
     } finally {
       this._recomputing = false;
     }
   },
-  _fail: function(error) {
+  _reportError: function(error) {
     var meta;
     if (isDev && this._trace) {
       meta = {
         stack: this._trace()
       };
     }
-    return this.didFail.emit(error, meta);
+    return this._onError(error, meta);
   }
 });
 
