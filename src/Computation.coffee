@@ -82,7 +82,7 @@ type.defineMethods
     return if @isInvalidated
     @isInvalidated = yes
 
-    unless @isAsync
+    if not @isAsync
       if @isActive
         @_invalidate()
         @_recompute()
@@ -90,7 +90,7 @@ type.defineMethods
 
     @_trace = Tracer "When computation was invalidated" if isDev
 
-    unless @_recomputing or not @isActive
+    if @isActive and not @_recomputing
       Tracker._requireFlush()
       Tracker._pendingComputations.push this
 
@@ -99,13 +99,13 @@ type.defineMethods
 
   stop: ->
 
-    return unless @isActive
+    return if not @isActive
     @isActive = no
 
     @invalidate()
     delete Tracker._computations[@id]
 
-    return unless @_didStop.listenerCount
+    return if not @_didStop.listenerCount
     Tracker.nonreactive =>
       @_didStop.emit()
       @_didStop.reset()
@@ -120,13 +120,12 @@ type.defineMethods
 
   onStop: (callback) ->
     assertType callback, Function
-    unless @isActive
-      Tracker.nonreactive callback
-    else @_didStop callback
+    if @isActive then @_didStop callback
+    else Tracker.nonreactive callback
     return
 
   _invalidate: ->
-    return unless @_didInvalidate.listenerCount
+    return if not @_didInvalidate.listenerCount
     Tracker.nonreactive =>
       @_didInvalidate.emit()
       @_didInvalidate.reset()

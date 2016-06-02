@@ -96,7 +96,7 @@ type.defineMethods({
     if (isDev) {
       this._trace = Tracer("When computation was invalidated");
     }
-    if (!(this._recomputing || !this.isActive)) {
+    if (this.isActive && !this._recomputing) {
       Tracker._requireFlush();
       Tracker._pendingComputations.push(this);
     }
@@ -129,10 +129,10 @@ type.defineMethods({
   },
   onStop: function(callback) {
     assertType(callback, Function);
-    if (!this.isActive) {
-      Tracker.nonreactive(callback);
-    } else {
+    if (this.isActive) {
       this._didStop(callback);
+    } else {
+      Tracker.nonreactive(callback);
     }
   },
   _invalidate: function() {
