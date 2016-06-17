@@ -6,7 +6,7 @@
     "Type": "aleclarson/Type#1.0.0",
     "assert": "aleclarson/assert#1.0.0",
     "assertType": "aleclarson/assertType#1.0.0",
-    "event": "aleclarson/event#1.0.0",
+    "emptyFunction": "aleclarson/emptyFunction#1.0.0",
     "failure": "aleclarson/failure#1.0.0",
     "getArgProp": "aleclarson/getArgProp#1.0.0",
     "hasKeys": "aleclarson/hasKeys#1.0.0",

@@ -1,12 +1,10 @@
 
 require "isDev"
 
-{ throwFailure } = require "failure"
-
+emptyFunction = require "emptyFunction"
 assertType = require "assertType"
 getArgProp = require "getArgProp"
 Tracer = require "tracer"
-Event = require "event"
 Type = require "Type"
 
 Tracker = require "./Tracker"
@@ -23,7 +21,7 @@ type.optionTypes =
 
 type.optionDefaults =
   async: yes
-  onError: throwFailure
+  onError: (error) -> throw error
 
 type.defineValues
 
@@ -39,7 +37,7 @@ type.defineValues
 
   isInvalidated: no
 
-  _recomputing: no
+  _isRecomputing: no
 
   _parent: (options) -> options.parent or Tracker.currentComputation
 
@@ -47,11 +45,11 @@ type.defineValues
 
   _onError: getArgProp "onError"
 
-  _didInvalidate: -> Event()
+  _invalidateCallbacks: -> []
 
-  _didStop: -> Event()
+  _stopCallbacks: -> []
 
-  _trace: null if isDev
+  _trace: -> emptyFunction if isDev
 
 type.initInstance ->
   Tracker._computations[@id] = this
@@ -68,9 +66,7 @@ type.defineMethods
     @isActive = yes
 
     try @_compute()
-    catch error
-      @_reportError error
-      @stop()
+    catch error then @stop()
 
     @isFirstRun = no
     if Tracker.isActive
@@ -82,19 +78,16 @@ type.defineMethods
     return if @isInvalidated
     @isInvalidated = yes
 
-    if not @isAsync
-      if @isActive
-        @_invalidate()
+    isDev and @_trace = Tracer "computation.invalidate()"
+
+    if @isActive
+      if not @isAsync
         @_recompute()
-      return
+      else if not @_isRecomputing
+        Tracker._pendingComputations.push this
+        Tracker._requireFlush()
 
-    @_trace = Tracer "When computation was invalidated" if isDev
-
-    if @isActive and not @_recomputing
-      Tracker._requireFlush()
-      Tracker._pendingComputations.push this
-
-    @_invalidate()
+    @_didInvalidate()
     return
 
   stop: ->
@@ -105,64 +98,70 @@ type.defineMethods
     @invalidate()
     delete Tracker._computations[@id]
 
-    return if not @_didStop.listenerCount
-    Tracker.nonreactive =>
-      @_didStop.emit()
-      @_didStop.reset()
+    @_didStop()
     return
 
   onInvalidate: (callback) ->
+
     assertType callback, Function
+
     if @isInvalidated
       Tracker.nonreactive callback
-    else @_didInvalidate callback
+      return
+
+    @_invalidateCallbacks.push callback
     return
 
   onStop: (callback) ->
-    assertType callback, Function
-    if @isActive then @_didStop callback
-    else Tracker.nonreactive callback
-    return
 
-  _invalidate: ->
-    return if not @_didInvalidate.listenerCount
-    Tracker.nonreactive =>
-      @_didInvalidate.emit()
-      @_didInvalidate.reset()
+    assertType callback, Function
+
+    if @isActive
+      @_stopCallbacks.push callback
+      return
+
+    Tracker.nonreactive callback
     return
 
   _compute: ->
 
     @isInvalidated = no
 
-    previous = Tracker.currentComputation
+    outerComputation = Tracker.currentComputation
     Tracker._setCurrentComputation this
 
-    previousInCompute = Tracker._inCompute
+    wasComputing = Tracker._inCompute
     Tracker._inCompute = yes
 
     try @_func this
     finally
-      Tracker._setCurrentComputation previous
-      Tracker._inCompute = previousInCompute
+      Tracker._setCurrentComputation outerComputation
+      Tracker._inCompute = wasComputing
 
   _needsRecompute: ->
     @isInvalidated and @isActive
 
   _recompute: ->
+    return if not @_needsRecompute()
+    @_isRecomputing = yes
+    try @_compute()
+    finally @_isRecomputing = no
+    return
 
-    @_recomputing = yes
-    try
-      if @_needsRecompute()
-        try @_compute()
-        catch error
-          @_reportError error
+  _didStop: ->
+    callbacks = @_stopCallbacks
+    return if not callbacks.length
+    Tracker.nonreactive ->
+      callback() for callback in callbacks
+      callbacks.length = 0
+    return
 
-    finally
-      @_recomputing = no
-
-  _reportError: (error) ->
-    meta = stack: @_trace() if isDev and @_trace
-    @_onError error, meta
+  _didInvalidate: ->
+    callbacks = @_invalidateCallbacks
+    return if not callbacks.length
+    Tracker.nonreactive ->
+      callback() for callback in callbacks
+      callbacks.length = 0
+    return
 
 module.exports = type.build()

@@ -1,16 +1,14 @@
-var Event, Tracer, Tracker, Type, assertType, getArgProp, nextId, throwFailure, type;
+var Tracer, Tracker, Type, assertType, emptyFunction, getArgProp, nextId, type;
 
 require("isDev");
 
-throwFailure = require("failure").throwFailure;
+emptyFunction = require("emptyFunction");
 
 assertType = require("assertType");
 
 getArgProp = require("getArgProp");
 
 Tracer = require("tracer");
-
-Event = require("event");
 
 Type = require("Type");
 
@@ -29,7 +27,9 @@ type.optionTypes = {
 
 type.optionDefaults = {
   async: true,
-  onError: throwFailure
+  onError: function(error) {
+    throw error;
+  }
 };
 
 type.defineValues({
@@ -41,19 +41,23 @@ type.defineValues({
   isAsync: getArgProp("async"),
   isFirstRun: true,
   isInvalidated: false,
-  _recomputing: false,
+  _isRecomputing: false,
   _parent: function(options) {
     return options.parent || Tracker.currentComputation;
   },
   _func: getArgProp("func"),
   _onError: getArgProp("onError"),
-  _didInvalidate: function() {
-    return Event();
+  _invalidateCallbacks: function() {
+    return [];
   },
-  _didStop: function() {
-    return Event();
+  _stopCallbacks: function() {
+    return [];
   },
-  _trace: isDev ? null : void 0
+  _trace: function() {
+    if (isDev) {
+      return emptyFunction;
+    }
+  }
 });
 
 type.initInstance(function() {
@@ -73,7 +77,6 @@ type.defineMethods({
       this._compute();
     } catch (error1) {
       error = error1;
-      this._reportError(error);
       this.stop();
     }
     this.isFirstRun = false;
@@ -86,21 +89,16 @@ type.defineMethods({
       return;
     }
     this.isInvalidated = true;
-    if (!this.isAsync) {
-      if (this.isActive) {
-        this._invalidate();
+    isDev && (this._trace = Tracer("computation.invalidate()"));
+    if (this.isActive) {
+      if (!this.isAsync) {
         this._recompute();
+      } else if (!this._isRecomputing) {
+        Tracker._pendingComputations.push(this);
+        Tracker._requireFlush();
       }
-      return;
     }
-    if (isDev) {
-      this._trace = Tracer("When computation was invalidated");
-    }
-    if (this.isActive && !this._recomputing) {
-      Tracker._requireFlush();
-      Tracker._pendingComputations.push(this);
-    }
-    this._invalidate();
+    this._didInvalidate();
   },
   stop: function() {
     if (!this.isActive) {
@@ -109,84 +107,81 @@ type.defineMethods({
     this.isActive = false;
     this.invalidate();
     delete Tracker._computations[this.id];
-    if (!this._didStop.listenerCount) {
-      return;
-    }
-    Tracker.nonreactive((function(_this) {
-      return function() {
-        _this._didStop.emit();
-        return _this._didStop.reset();
-      };
-    })(this));
+    this._didStop();
   },
   onInvalidate: function(callback) {
     assertType(callback, Function);
     if (this.isInvalidated) {
       Tracker.nonreactive(callback);
-    } else {
-      this._didInvalidate(callback);
+      return;
     }
+    this._invalidateCallbacks.push(callback);
   },
   onStop: function(callback) {
     assertType(callback, Function);
     if (this.isActive) {
-      this._didStop(callback);
-    } else {
-      Tracker.nonreactive(callback);
-    }
-  },
-  _invalidate: function() {
-    if (!this._didInvalidate.listenerCount) {
+      this._stopCallbacks.push(callback);
       return;
     }
-    Tracker.nonreactive((function(_this) {
-      return function() {
-        _this._didInvalidate.emit();
-        return _this._didInvalidate.reset();
-      };
-    })(this));
+    Tracker.nonreactive(callback);
   },
   _compute: function() {
-    var previous, previousInCompute;
+    var outerComputation, wasComputing;
     this.isInvalidated = false;
-    previous = Tracker.currentComputation;
+    outerComputation = Tracker.currentComputation;
     Tracker._setCurrentComputation(this);
-    previousInCompute = Tracker._inCompute;
+    wasComputing = Tracker._inCompute;
     Tracker._inCompute = true;
     try {
       return this._func(this);
     } finally {
-      Tracker._setCurrentComputation(previous);
-      Tracker._inCompute = previousInCompute;
+      Tracker._setCurrentComputation(outerComputation);
+      Tracker._inCompute = wasComputing;
     }
   },
   _needsRecompute: function() {
     return this.isInvalidated && this.isActive;
   },
   _recompute: function() {
-    var error;
-    this._recomputing = true;
+    if (!this._needsRecompute()) {
+      return;
+    }
+    this._isRecomputing = true;
     try {
-      if (this._needsRecompute()) {
-        try {
-          return this._compute();
-        } catch (error1) {
-          error = error1;
-          return this._reportError(error);
-        }
-      }
+      this._compute();
     } finally {
-      this._recomputing = false;
+      this._isRecomputing = false;
     }
   },
-  _reportError: function(error) {
-    var meta;
-    if (isDev && this._trace) {
-      meta = {
-        stack: this._trace()
-      };
+  _didStop: function() {
+    var callbacks;
+    callbacks = this._stopCallbacks;
+    if (!callbacks.length) {
+      return;
     }
-    return this._onError(error, meta);
+    Tracker.nonreactive(function() {
+      var callback, i, len;
+      for (i = 0, len = callbacks.length; i < len; i++) {
+        callback = callbacks[i];
+        callback();
+      }
+      return callbacks.length = 0;
+    });
+  },
+  _didInvalidate: function() {
+    var callbacks;
+    callbacks = this._invalidateCallbacks;
+    if (!callbacks.length) {
+      return;
+    }
+    Tracker.nonreactive(function() {
+      var callback, i, len;
+      for (i = 0, len = callbacks.length; i < len; i++) {
+        callback = callbacks[i];
+        callback();
+      }
+      return callbacks.length = 0;
+    });
   }
 });
 
