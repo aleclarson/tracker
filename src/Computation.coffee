@@ -3,7 +3,7 @@ require "isDev"
 
 emptyFunction = require "emptyFunction"
 assertType = require "assertType"
-getArgProp = require "getArgProp"
+fromArgs = require "fromArgs"
 Tracer = require "tracer"
 Type = require "Type"
 
@@ -27,11 +27,11 @@ type.defineValues
 
   id: -> nextId++
 
-  keyPath: getArgProp "keyPath"
+  keyPath: fromArgs "keyPath"
 
   isActive: no
 
-  isAsync: getArgProp "async"
+  isAsync: fromArgs "async"
 
   isFirstRun: yes
 
@@ -41,9 +41,9 @@ type.defineValues
 
   _parent: (options) -> options.parent or Tracker.currentComputation
 
-  _func: getArgProp "func"
+  _func: fromArgs "func"
 
-  _onError: getArgProp "onError"
+  _onError: fromArgs "onError"
 
   _invalidateCallbacks: -> []
 

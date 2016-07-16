@@ -1,4 +1,4 @@
-var Tracer, Tracker, Type, assertType, emptyFunction, getArgProp, nextId, type;
+var Tracer, Tracker, Type, assertType, emptyFunction, fromArgs, nextId, type;
 
 require("isDev");
 
@@ -6,7 +6,7 @@ emptyFunction = require("emptyFunction");
 
 assertType = require("assertType");
 
-getArgProp = require("getArgProp");
+fromArgs = require("fromArgs");
 
 Tracer = require("tracer");
 
@@ -36,17 +36,17 @@ type.defineValues({
   id: function() {
     return nextId++;
   },
-  keyPath: getArgProp("keyPath"),
+  keyPath: fromArgs("keyPath"),
   isActive: false,
-  isAsync: getArgProp("async"),
+  isAsync: fromArgs("async"),
   isFirstRun: true,
   isInvalidated: false,
   _isRecomputing: false,
   _parent: function(options) {
     return options.parent || Tracker.currentComputation;
   },
-  _func: getArgProp("func"),
-  _onError: getArgProp("onError"),
+  _func: fromArgs("func"),
+  _onError: fromArgs("onError"),
   _invalidateCallbacks: function() {
     return [];
   },
@@ -187,4 +187,4 @@ type.defineMethods({
 
 module.exports = type.build();
 
-//# sourceMappingURL=../../map/src/Computation.map
+//# sourceMappingURL=map/Computation.map
