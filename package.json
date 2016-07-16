@@ -1,7 +1,7 @@
 {
   "name": "tracker",
   "version": "2.0.0",
-  "main": "js/src/index",
+  "main": "js/index",
   "dependencies": {
     "Type": "aleclarson/Type#1.0.0",
     "assert": "aleclarson/assert#1.0.0",

@@ -51,4 +51,4 @@ type.defineMethods({
 
 module.exports = type.build();
 
-//# sourceMappingURL=../../map/src/Dependency.map
+//# sourceMappingURL=map/Dependency.map
