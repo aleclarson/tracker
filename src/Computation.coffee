@@ -13,15 +13,11 @@ nextId = 1
 
 type = Type "Tracker_Computation"
 
-type.optionTypes =
-  func: Function
-  async: Boolean.Maybe
-  keyPath: String.Maybe
-  onError: Function
-
-type.optionDefaults =
-  async: yes
-  onError: (error) -> throw error
+type.defineOptions
+  func: Function.isRequired
+  async: Boolean.withDefault yes
+  keyPath: String
+  onError: Function.withDefault (error) -> throw error
 
 type.defineValues
 
@@ -54,9 +50,18 @@ type.defineValues
 type.initInstance ->
   Tracker._computations[@id] = this
 
-type.bindMethods [
-  "stop"
-]
+type.defineBoundMethods
+
+  stop: ->
+
+    return if not @isActive
+    @isActive = no
+
+    @invalidate()
+    delete Tracker._computations[@id]
+
+    @_didStop()
+    return
 
 type.defineMethods
 
@@ -88,17 +93,6 @@ type.defineMethods
         Tracker._requireFlush()
 
     @_didInvalidate()
-    return
-
-  stop: ->
-
-    return if not @isActive
-    @isActive = no
-
-    @invalidate()
-    delete Tracker._computations[@id]
-
-    @_didStop()
     return
 
   onInvalidate: (callback) ->

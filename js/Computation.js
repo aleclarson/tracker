@@ -18,19 +18,14 @@ nextId = 1;
 
 type = Type("Tracker_Computation");
 
-type.optionTypes = {
-  func: Function,
-  async: Boolean.Maybe,
-  keyPath: String.Maybe,
-  onError: Function
-};
-
-type.optionDefaults = {
-  async: true,
-  onError: function(error) {
+type.defineOptions({
+  func: Function.isRequired,
+  async: Boolean.withDefault(true),
+  keyPath: String,
+  onError: Function.withDefault(function(error) {
     throw error;
-  }
-};
+  })
+});
 
 type.defineValues({
   id: function() {
@@ -64,7 +59,17 @@ type.initInstance(function() {
   return Tracker._computations[this.id] = this;
 });
 
-type.bindMethods(["stop"]);
+type.defineBoundMethods({
+  stop: function() {
+    if (!this.isActive) {
+      return;
+    }
+    this.isActive = false;
+    this.invalidate();
+    delete Tracker._computations[this.id];
+    this._didStop();
+  }
+});
 
 type.defineMethods({
   start: function() {
@@ -99,15 +104,6 @@ type.defineMethods({
       }
     }
     this._didInvalidate();
-  },
-  stop: function() {
-    if (!this.isActive) {
-      return;
-    }
-    this.isActive = false;
-    this.invalidate();
-    delete Tracker._computations[this.id];
-    this._didStop();
   },
   onInvalidate: function(callback) {
     assertType(callback, Function);
