@@ -5,7 +5,7 @@
   "dependencies": {
     "Type": "aleclarson/Type#1.0.0",
     "assert": "aleclarson/assert#1.0.0",
-    "assertType": "aleclarson/assertType#1.0.0",
+    "assertType": "aleclarson/assertType#2.0.0",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
     "failure": "aleclarson/failure#1.0.0",
     "fromArgs": "aleclarson/fromArgs#1.0.0",
