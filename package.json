@@ -3,7 +3,7 @@
   "version": "2.0.0",
   "main": "js/index",
   "dependencies": {
-    "Type": "aleclarson/Type#1.0.0",
+    "Type": "aleclarson/Type#1.1.0",
     "assert": "aleclarson/assert#1.0.0",
     "assertType": "aleclarson/assertType#2.0.0",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
