@@ -1,23 +1,21 @@
 
-{ throwFailure } = require "failure"
-
 assertType = require "assertType"
 assert = require "assert"
 Type = require "Type"
 
 type = Type "Tracker"
 
-type.defineValues
+type.defineValues ->
 
   isActive: no
 
   currentComputation: null
 
-  _computations: -> {}
+  _computations: {}
 
-  _pendingComputations: -> []
+  _pendingComputations: []
 
-  _afterFlushCallbacks: -> []
+  _afterFlushCallbacks: []
 
   _willFlush: no
 
@@ -38,11 +36,11 @@ type.defineMethods
     computation.start()
     return computation
 
-  nonreactive: (func) ->
+  nonreactive: (func, args) ->
     assertType func, Function
     previous = @currentComputation
     @_setCurrentComputation null
-    try func()
+    try func.apply null, args
     finally
       @_setCurrentComputation previous
 
@@ -103,7 +101,7 @@ type.defineMethods
           callback = callbacks.shift()
           try callback()
           catch error
-            throwFailure error, { callback }
+            GLOBAL.setImmediate -> throw error
 
       finishedTry = yes
 

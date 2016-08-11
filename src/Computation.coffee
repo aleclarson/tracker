@@ -3,7 +3,6 @@ require "isDev"
 
 emptyFunction = require "emptyFunction"
 assertType = require "assertType"
-fromArgs = require "fromArgs"
 Tracer = require "tracer"
 Type = require "Type"
 
@@ -19,15 +18,15 @@ type.defineOptions
   keyPath: String
   onError: Function.withDefault (error) -> throw error
 
-type.defineValues
+type.defineValues (options) ->
 
-  id: -> nextId++
+  id: nextId++
 
-  keyPath: fromArgs "keyPath"
+  keyPath: options.keyPath
 
   isActive: no
 
-  isAsync: fromArgs "async"
+  isAsync: options.async
 
   isFirstRun: yes
 
@@ -35,17 +34,17 @@ type.defineValues
 
   _isRecomputing: no
 
-  _parent: (options) -> options.parent or Tracker.currentComputation
+  _parent: options.parent or Tracker.currentComputation
 
-  _func: fromArgs "func"
+  _func: options.func
 
-  _onError: fromArgs "onError"
+  _onError: options.onError
 
-  _invalidateCallbacks: -> []
+  _invalidateCallbacks: []
 
-  _stopCallbacks: -> []
+  _stopCallbacks: []
 
-  _trace: -> emptyFunction if isDev
+  _trace: isDev and emptyFunction
 
 type.initInstance ->
   Tracker._computations[@id] = this
@@ -82,6 +81,7 @@ type.defineMethods
 
     return if @isInvalidated
     @isInvalidated = yes
+    @_didInvalidate()
 
     isDev and @_trace = Tracer "computation.invalidate()"
 
@@ -91,8 +91,6 @@ type.defineMethods
       else if not @_isRecomputing
         Tracker._pendingComputations.push this
         Tracker._requireFlush()
-
-    @_didInvalidate()
     return
 
   onInvalidate: (callback) ->
@@ -137,6 +135,7 @@ type.defineMethods
 
   _recompute: ->
     return if not @_needsRecompute()
+    @DEBUG and log.it @__name + "._recompute()"
     @_isRecomputing = yes
     try @_compute()
     finally @_isRecomputing = no

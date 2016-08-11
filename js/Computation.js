@@ -1,12 +1,10 @@
-var Tracer, Tracker, Type, assertType, emptyFunction, fromArgs, nextId, type;
+var Tracer, Tracker, Type, assertType, emptyFunction, nextId, type;
 
 require("isDev");
 
 emptyFunction = require("emptyFunction");
 
 assertType = require("assertType");
-
-fromArgs = require("fromArgs");
 
 Tracer = require("tracer");
 
@@ -27,32 +25,22 @@ type.defineOptions({
   })
 });
 
-type.defineValues({
-  id: function() {
-    return nextId++;
-  },
-  keyPath: fromArgs("keyPath"),
-  isActive: false,
-  isAsync: fromArgs("async"),
-  isFirstRun: true,
-  isInvalidated: false,
-  _isRecomputing: false,
-  _parent: function(options) {
-    return options.parent || Tracker.currentComputation;
-  },
-  _func: fromArgs("func"),
-  _onError: fromArgs("onError"),
-  _invalidateCallbacks: function() {
-    return [];
-  },
-  _stopCallbacks: function() {
-    return [];
-  },
-  _trace: function() {
-    if (isDev) {
-      return emptyFunction;
-    }
-  }
+type.defineValues(function(options) {
+  return {
+    id: nextId++,
+    keyPath: options.keyPath,
+    isActive: false,
+    isAsync: options.async,
+    isFirstRun: true,
+    isInvalidated: false,
+    _isRecomputing: false,
+    _parent: options.parent || Tracker.currentComputation,
+    _func: options.func,
+    _onError: options.onError,
+    _invalidateCallbacks: [],
+    _stopCallbacks: [],
+    _trace: isDev && emptyFunction
+  };
 });
 
 type.initInstance(function() {
@@ -94,6 +82,7 @@ type.defineMethods({
       return;
     }
     this.isInvalidated = true;
+    this._didInvalidate();
     isDev && (this._trace = Tracer("computation.invalidate()"));
     if (this.isActive) {
       if (!this.isAsync) {
@@ -103,7 +92,6 @@ type.defineMethods({
         Tracker._requireFlush();
       }
     }
-    this._didInvalidate();
   },
   onInvalidate: function(callback) {
     assertType(callback, Function);
@@ -142,6 +130,7 @@ type.defineMethods({
     if (!this._needsRecompute()) {
       return;
     }
+    this.DEBUG && log.it(this.__name + "._recompute()");
     this._isRecomputing = true;
     try {
       this._compute();

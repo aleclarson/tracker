@@ -1,6 +1,4 @@
-var Type, assert, assertType, throwFailure, type;
-
-throwFailure = require("failure").throwFailure;
+var Type, assert, assertType, type;
 
 assertType = require("assertType");
 
@@ -10,21 +8,17 @@ Type = require("Type");
 
 type = Type("Tracker");
 
-type.defineValues({
-  isActive: false,
-  currentComputation: null,
-  _computations: function() {
-    return {};
-  },
-  _pendingComputations: function() {
-    return [];
-  },
-  _afterFlushCallbacks: function() {
-    return [];
-  },
-  _willFlush: false,
-  _inFlush: false,
-  _inCompute: false
+type.defineValues(function() {
+  return {
+    isActive: false,
+    currentComputation: null,
+    _computations: {},
+    _pendingComputations: [],
+    _afterFlushCallbacks: [],
+    _willFlush: false,
+    _inFlush: false,
+    _inCompute: false
+  };
 });
 
 type.defineMethods({
@@ -45,13 +39,13 @@ type.defineMethods({
     computation.start();
     return computation;
   },
-  nonreactive: function(func) {
+  nonreactive: function(func, args) {
     var previous;
     assertType(func, Function);
     previous = this.currentComputation;
     this._setCurrentComputation(null);
     try {
-      return func();
+      return func.apply(null, args);
     } finally {
       this._setCurrentComputation(previous);
     }
@@ -118,8 +112,8 @@ type.defineMethods({
             callback();
           } catch (error1) {
             error = error1;
-            throwFailure(error, {
-              callback: callback
+            GLOBAL.setImmediate(function() {
+              throw error;
             });
           }
         }
