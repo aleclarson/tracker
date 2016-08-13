@@ -71,6 +71,7 @@ type.defineMethods({
     } catch (error1) {
       error = error1;
       this.stop();
+      this._onError(error);
     }
     this.isFirstRun = false;
     if (Tracker.isActive) {

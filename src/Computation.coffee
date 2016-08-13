@@ -70,7 +70,9 @@ type.defineMethods
     @isActive = yes
 
     try @_compute()
-    catch error then @stop()
+    catch error
+      @stop()
+      @_onError error
 
     @isFirstRun = no
     if Tracker.isActive
