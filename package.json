@@ -7,8 +7,6 @@
     "assert": "aleclarson/assert#1.0.0",
     "assertType": "aleclarson/assertType#2.0.0",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
-    "failure": "aleclarson/failure#1.0.0",
-    "fromArgs": "aleclarson/fromArgs#1.0.0",
     "hasKeys": "aleclarson/hasKeys#1.0.0",
     "isDev": "aleclarson/isDev#1.0.0",
     "tracer": "aleclarson/tracer#1.0.0"
