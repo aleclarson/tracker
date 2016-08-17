@@ -36,11 +36,14 @@ type.defineMethods
     computation.start()
     return computation
 
-  nonreactive: (func, args) ->
+  nonreactive: (context, func) ->
+    if arguments.length is 1
+      func = context
+      context = null
     assertType func, Function
     previous = @currentComputation
     @_setCurrentComputation null
-    try func.apply null, args
+    try func.call context
     finally
       @_setCurrentComputation previous
 

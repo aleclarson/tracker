@@ -39,13 +39,17 @@ type.defineMethods({
     computation.start();
     return computation;
   },
-  nonreactive: function(func, args) {
+  nonreactive: function(context, func) {
     var previous;
+    if (arguments.length === 1) {
+      func = context;
+      context = null;
+    }
     assertType(func, Function);
     previous = this.currentComputation;
     this._setCurrentComputation(null);
     try {
-      return func.apply(null, args);
+      return func.call(context);
     } finally {
       this._setCurrentComputation(previous);
     }
