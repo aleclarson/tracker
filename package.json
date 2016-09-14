@@ -2,6 +2,13 @@
   "name": "tracker",
   "version": "2.0.0",
   "main": "js/index",
+  "plugins": [
+    "lotus-coffee"
+  ],
+  "scripts": {
+    "build": "coffee -cb -o js src",
+    "postinstall": "postinstall-build js 'npm run build'"
+  },
   "dependencies": {
     "Type": "aleclarson/Type#1.1.0",
     "assert": "aleclarson/assert#1.0.0",
@@ -9,11 +16,10 @@
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
     "hasKeys": "aleclarson/hasKeys#1.0.0",
     "isDev": "aleclarson/isDev#1.0.0",
+    "postinstall-build": "0.2.x",
     "tracer": "aleclarson/tracer#1.0.0"
   },
-  "lotus": {
-    "plugins": [
-      "lotus-coffee"
-    ]
+  "devDependencies": {
+    "coffee-script": "1.9.x"
   }
 }
