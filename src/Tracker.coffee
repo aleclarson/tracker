@@ -1,4 +1,6 @@
 
+# TODO: Avoid extraneous recomputations by providing a method for batching sync computations.
+
 assertType = require "assertType"
 assert = require "assert"
 Type = require "Type"
