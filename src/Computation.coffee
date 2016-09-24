@@ -1,9 +1,8 @@
 
-require "isDev"
-
 emptyFunction = require "emptyFunction"
 assertType = require "assertType"
 Tracer = require "tracer"
+isDev = require "isDev"
 Type = require "Type"
 
 Tracker = require "./Tracker"
