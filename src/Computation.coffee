@@ -136,7 +136,6 @@ type.defineMethods
 
   _recompute: ->
     return if not @_needsRecompute()
-    @DEBUG and log.it @__name + "._recompute()"
     @_isRecomputing = yes
     try @_compute()
     finally @_isRecomputing = no
