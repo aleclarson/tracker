@@ -33,8 +33,7 @@ type.defineMethods
 
   autorun: (func, options = {}) ->
     assertType func, Function
-    options.func = func
-    computation = @Computation options
+    computation = @Computation func, options
     computation.start()
     return computation
 

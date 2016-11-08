@@ -11,13 +11,14 @@ nextId = 1
 
 type = Type "Tracker_Computation"
 
-type.defineOptions
+type.defineArgs
   func: Function.isRequired
-  async: Boolean.withDefault yes
-  keyPath: String
-  onError: Function.withDefault (error) -> throw error
+  options:
+    keyPath: String
+    async: Boolean
+    onError: Function
 
-type.defineValues (options) ->
+type.defineValues (func, options) ->
 
   id: nextId++
 
@@ -25,19 +26,19 @@ type.defineValues (options) ->
 
   isActive: no
 
-  isAsync: options.async
-
   isFirstRun: yes
 
   isInvalidated: no
 
-  _isRecomputing: no
+  isAsync: options.async ? yes
+
+  _func: func
 
   _parent: options.parent or Tracker.currentComputation
 
-  _func: options.func
-
   _onError: options.onError
+
+  _isRecomputing: no
 
   _invalidateCallbacks: []
 
