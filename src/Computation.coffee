@@ -26,8 +26,6 @@ type.defineValues (func, options) ->
 
   isActive: no
 
-  isFirstRun: yes
-
   isInvalidated: no
 
   isAsync: options.async ? yes
@@ -74,7 +72,6 @@ type.defineMethods
       @stop()
       @_onError error
 
-    @isFirstRun = no
     if Tracker.isActive
       Tracker.onInvalidate @stop
     return
