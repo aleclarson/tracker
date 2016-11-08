@@ -76,14 +76,18 @@ type.defineMethods
     @isInvalidated = yes
     @_didInvalidate()
 
-    isDev and @_trace = Tracer "computation.invalidate()"
+    if isDev
+      @_trace = Tracer "computation.invalidate()"
 
-    if @isActive
-      if not @isAsync
-        @_recompute()
-      else if not @_isRecomputing
-        Tracker._pendingComputations.push this
-        Tracker._requireFlush()
+    return unless @isActive
+
+    if @isAsync
+      return if @_isRecomputing
+      Tracker._pendingComputations.push this
+      Tracker._requireFlush()
+      return
+
+    @_recompute()
     return
 
   onInvalidate: (callback) ->
@@ -132,11 +136,11 @@ type.defineMethods
     @isInvalidated and @isActive
 
   _recompute: ->
-    return if not @_needsRecompute()
-    @_isRecomputing = yes
-    try @_compute()
-    finally @_isRecomputing = no
-    return
+    if @_needsRecompute()
+      @_isRecomputing = yes
+      try @_compute()
+      finally
+        @_isRecomputing = no
 
   _didStop: ->
     callbacks = @_stopCallbacks
