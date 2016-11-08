@@ -63,15 +63,9 @@ type.defineBoundMethods
 type.defineMethods
 
   start: ->
-
     return if @isActive
     @isActive = yes
-
-    try @_compute()
-    catch error
-      @stop()
-      @_onError error
-
+    @_compute()
     if Tracker.isActive
       Tracker.onInvalidate @stop
     return
@@ -125,6 +119,11 @@ type.defineMethods
     Tracker._inCompute = yes
 
     try @_func this
+    catch error
+      @stop()
+      if @_onError
+      then @_onError error
+      else throw error
     finally
       Tracker._setCurrentComputation outerComputation
       Tracker._inCompute = wasComputing
