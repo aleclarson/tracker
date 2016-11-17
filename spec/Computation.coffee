@@ -6,7 +6,7 @@ describe "Tracker.Computation", ->
   it "depends on every referenced Tracker.Dependency", ->
     depA = Tracker.Dependency()
     depB = Tracker.Dependency()
-    c = Tracker.Computation func: ->
+    c = Tracker.Computation ->
       depA.depend()
       depB.depend()
     c.start()
@@ -22,7 +22,7 @@ describe "Tracker.Computation", ->
     func = ->
       dep.depend()
       spy value
-    c = Tracker.Computation { func, async: no }
+    c = Tracker.Computation func, {async: no}
     c.start()
     value = 1
     dep.changed()
