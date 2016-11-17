@@ -11,6 +11,9 @@ nextId = 1
 
 type = Type "Tracker_Computation"
 
+type.initArgs (args) ->
+  args[1] ?= {}
+
 type.defineArgs
   func: Function.isRequired
   options:
