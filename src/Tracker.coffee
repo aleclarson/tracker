@@ -107,7 +107,7 @@ type.defineMethods
           callback = callbacks.shift()
           try callback()
           catch error
-            GLOBAL.setImmediate -> throw error
+            setImmediate -> throw error
 
       finishedTry = yes
 
