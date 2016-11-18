@@ -1,21 +1,20 @@
 {
   "name": "tracker",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "main": "js/index",
-  "dependencies": {
-    "Type": "aleclarson/Type#1.1.0",
-    "assert": "aleclarson/assert#1.0.0",
-    "assertType": "aleclarson/assertType#2.0.0",
-    "emptyFunction": "aleclarson/emptyFunction#1.0.0",
-    "failure": "aleclarson/failure#1.0.0",
-    "fromArgs": "aleclarson/fromArgs#1.0.0",
-    "hasKeys": "aleclarson/hasKeys#1.0.0",
-    "isDev": "aleclarson/isDev#1.0.0",
-    "tracer": "aleclarson/tracer#1.0.0"
+  "plugins": [
+    "lotus-coffee"
+  ],
+  "scripts": {
+    "build": "coffee-build -v 1.11.x -b -o js src",
+    "postinstall": "npm run build"
   },
-  "lotus": {
-    "plugins": [
-      "lotus-coffee"
-    ]
+  "dependencies": {
+    "Type": "aleclarson/Type#2.1.0",
+    "assertType": "aleclarson/assertType#2.0.1",
+    "emptyFunction": "aleclarson/emptyFunction#1.0.0",
+    "hasKeys": "aleclarson/hasKeys#1.0.0",
+    "isDev": "aleclarson/isDev#2.0.0",
+    "tracer": "aleclarson/tracer#1.0.0"
   }
 }

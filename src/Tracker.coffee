@@ -1,23 +1,22 @@
 
-{ throwFailure } = require "failure"
+# TODO: Avoid extraneous recomputations by providing a method for batching sync computations.
 
 assertType = require "assertType"
-assert = require "assert"
 Type = require "Type"
 
 type = Type "Tracker"
 
-type.defineValues
+type.defineValues ->
 
   isActive: no
 
   currentComputation: null
 
-  _computations: -> {}
+  _computations: {}
 
-  _pendingComputations: -> []
+  _pendingComputations: []
 
-  _afterFlushCallbacks: -> []
+  _afterFlushCallbacks: []
 
   _willFlush: no
 
@@ -33,21 +32,26 @@ type.defineMethods
 
   autorun: (func, options = {}) ->
     assertType func, Function
-    options.func = func
-    computation = @Computation options
+    computation = @Computation func, options
     computation.start()
     return computation
 
-  nonreactive: (func) ->
+  nonreactive: (context, func) ->
+    if arguments.length is 1
+      func = context
+      context = null
     assertType func, Function
     previous = @currentComputation
     @_setCurrentComputation null
-    try func()
+    try func.call context
     finally
       @_setCurrentComputation previous
 
   onInvalidate: (callback) ->
-    assert @isActive, "'onInvalidate' cannot be called when 'isActive' is false!"
+
+    unless @isActive
+      throw Error "'onInvalidate' cannot be called when 'isActive' is false!"
+
     @currentComputation.onInvalidate callback
     return
 
@@ -68,11 +72,11 @@ type.defineMethods
 
   _runFlush: (isAsync) ->
 
-    assert not @_inFlush,
-      reason: "Cannot call 'flush' during a flush!"
+    if @_inFlush
+      throw Error "Cannot call 'flush' during a flush!"
 
-    assert not @_inCompute,
-      reason: "Cannot call 'flush' during a computation!"
+    if @_inCompute
+      throw Error "Cannot call 'flush' during a computation!"
 
     @_inFlush = yes
     @_willFlush = yes
@@ -103,7 +107,7 @@ type.defineMethods
           callback = callbacks.shift()
           try callback()
           catch error
-            throwFailure error, { callback }
+            setImmediate -> throw error
 
       finishedTry = yes
 
@@ -117,7 +121,10 @@ type.defineMethods
       @_inFlush = no
 
       if pending.length or callbacks.length
-        assert isAsync, "Only async flushing should end up here!"
+
+        unless isAsync
+          throw Error "Only async flushing should end up here!"
+
         setTimeout @_requireFlush, 10
 
 module.exports = type.construct()
