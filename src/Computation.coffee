@@ -17,9 +17,9 @@ type.initArgs (args) ->
 type.defineArgs
   func: Function.isRequired
   options:
-    keyPath: String
-    async: Boolean
+    sync: Boolean
     onError: Function
+    keyPath: String
 
 type.defineValues (func, options) ->
 
@@ -31,7 +31,7 @@ type.defineValues (func, options) ->
 
   isInvalidated: no
 
-  isAsync: options.async ? yes
+  isAsync: not options.sync
 
   _func: func
 

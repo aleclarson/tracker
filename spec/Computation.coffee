@@ -22,7 +22,7 @@ describe "Tracker.Computation", ->
     func = ->
       dep.depend()
       spy value
-    c = Tracker.Computation func, {async: no}
+    c = Tracker.Computation func, {sync: yes}
     c.start()
     value = 1
     dep.changed()
