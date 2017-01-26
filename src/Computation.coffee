@@ -11,17 +11,16 @@ nextId = 1
 
 type = Type "Tracker_Computation"
 
-type.initArgs (args) ->
-  args[1] ?= {}
+type.defineArgs ->
+  required: [yes, no]
+  types: [
+    Function
+    sync: Boolean.Maybe
+    onError: Function.Maybe
+    keyPath: String.Maybe
+  ]
 
-type.defineArgs
-  func: Function.isRequired
-  options:
-    sync: Boolean
-    onError: Function
-    keyPath: String
-
-type.defineValues (func, options) ->
+type.defineValues (func, options = {}) ->
 
   id: nextId++
 
