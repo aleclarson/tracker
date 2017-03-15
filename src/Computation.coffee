@@ -15,9 +15,9 @@ type.defineArgs ->
   required: [yes, no]
   types: [
     Function
-    sync: Boolean
-    onError: Function
-    keyPath: String
+    sync: Boolean.Maybe
+    onError: Function.Maybe
+    keyPath: String.Maybe
   ]
 
 type.defineValues (func, options = {}) ->
