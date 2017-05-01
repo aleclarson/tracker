@@ -6,9 +6,9 @@ Tracker = require "./Tracker"
 
 type = Type "Tracker_Dependency"
 
-type.defineValues
+type.defineValues ->
 
-  _dependentsById: -> {}
+  _dependentsById: {}
 
 type.defineMethods
 
