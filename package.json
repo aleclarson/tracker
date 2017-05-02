@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "Type": "aleclarson/Type#2.4.0",
-    "assertType": "aleclarson/assertType#2.0.1",
+    "assertType": "aleclarson/assertType#2.0.2",
     "emptyFunction": "aleclarson/emptyFunction#1.0.0",
     "hasKeys": "aleclarson/hasKeys#1.0.0",
     "isDev": "aleclarson/isDev#2.0.0",
